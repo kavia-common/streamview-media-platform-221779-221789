@@ -18,7 +18,15 @@ class TokenPayload(BaseModel):
 
 class UserCreate(BaseModel):
     email: EmailStr = Field(..., description="User email address.")
-    password: str = Field(..., min_length=6, description="User password.")
+    # We enforce bcrypt-safe limits by rejecting passwords longer than 72 bytes,
+    # which for UTF-8 is approximated here by max_length=72 characters.
+    # This aligns with auth service which truncates to 72 bytes before hashing.
+    password: str = Field(
+        ...,
+        min_length=6,
+        max_length=72,
+        description="User password. Max 72 characters due to bcrypt limits.",
+    )
 
 
 class UserOut(BaseModel):

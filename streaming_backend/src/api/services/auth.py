@@ -12,7 +12,8 @@ from src.api.core.config import get_settings
 from src.api.core.db import get_db
 from src.api.models.models import User
 
-# Configure passlib to use bcrypt. Note: bcrypt only considers the first 72 bytes.
+# Configure passlib to use bcrypt with explicit handling of the 72-byte limit.
+# We keep bcrypt==3.2.2 pinned in requirements.txt and use passlib's bcrypt scheme.
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
@@ -46,6 +47,9 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 def create_access_token(user: User) -> str:
+    """
+    Create a signed JWT access token for the given user using configured algorithm and secret.
+    """
     settings = get_settings()
     expire_min = settings.jwt_access_token_expires_minutes
     exp = int(time.time() + expire_min * 60)
@@ -59,6 +63,9 @@ def create_access_token(user: User) -> str:
 
 
 def set_auth_cookie(response: Response, token: str) -> None:
+    """
+    Set the HttpOnly auth cookie carrying the JWT access token.
+    """
     settings = get_settings()
     response.set_cookie(
         key="access_token",
@@ -73,6 +80,9 @@ def set_auth_cookie(response: Response, token: str) -> None:
 
 
 def clear_auth_cookie(response: Response) -> None:
+    """
+    Clear the auth cookie to log out the user.
+    """
     settings = get_settings()
     response.delete_cookie(
         key="access_token",
