@@ -12,6 +12,9 @@ from src.api.main import create_app
 from src.api.core import db as db_module
 from src.api.models.models import Base  # type: ignore[attr-defined]
 
+# Ensure that anything checking APP_ENV or pytest env detects test mode
+os.environ.setdefault("APP_ENV", "test")
+
 
 @contextmanager
 def override_db(sqlite_path: str) -> Generator[None, None, None]:

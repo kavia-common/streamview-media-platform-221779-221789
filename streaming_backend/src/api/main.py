@@ -44,6 +44,8 @@ def create_app() -> FastAPI:
     if not _is_test_env():
         # No implicit seeding here; left intentionally blank to avoid altering DB state unexpectedly.
         # Seeding is available via manual script: python -m src.api.scripts.bootstrap_db
+        # If you add any automated seeding, it MUST guard using _is_test_env() or APP_ENV=='test'
+        # or presence of PYTEST_CURRENT_TEST to avoid interference with CI.
         pass
 
     # CORS
