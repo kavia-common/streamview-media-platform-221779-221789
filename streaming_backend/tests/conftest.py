@@ -71,6 +71,34 @@ def app(tmp_db_file: str):
         yield app
 
 
+def _truncate_domain_tables() -> None:
+    """
+    Ensure a deterministic clean state for domain tables that affect listings.
+    Truncates (DELETEs) rows from association and dependent tables first.
+    """
+    # Import inline to avoid circulars at module import time
+    from src.api.models.models import video_categories  # type: ignore
+    from src.api.models.models import WatchHistory, Video, Category, User  # noqa
+
+    with db_module.session_scope() as s:
+        # Association table must be cleared prior to videos/categories to respect FKs.
+        s.execute(video_categories.delete())  # raw delete on association table
+        # Clear history then videos and categories
+        s.query(WatchHistory).delete()
+        s.query(Video).delete()
+        s.query(Category).delete()
+        # Users are left intact for auth-related tests; they don't affect /videos or /categories
+
+
+@pytest.fixture(autouse=True)
+def clean_tables_before_test():
+    """
+    Auto-used fixture to clear domain tables before each test to avoid cross-test contamination.
+    """
+    _truncate_domain_tables()
+    yield
+
+
 @pytest.fixture()
 def client(app):
     """
