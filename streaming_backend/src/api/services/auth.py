@@ -12,15 +12,37 @@ from src.api.core.config import get_settings
 from src.api.core.db import get_db
 from src.api.models.models import User
 
+# Configure passlib to use bcrypt. Note: bcrypt only considers the first 72 bytes.
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
+def _bcrypt_truncate(password: str) -> str:
+    """
+    Normalize and truncate password to 72 bytes for bcrypt safety.
+
+    Bcrypt ignores bytes beyond the first 72. To avoid surprises where two
+    different long inputs produce the same hash (due to bcrypt truncation),
+    we explicitly truncate to the first 72 bytes after UTF-8 encoding.
+    """
+    if password is None:
+        return ""
+    # Encode to bytes, slice to 72, then decode back to string using 'ignore' to
+    # avoid decoding errors if truncation splits a multibyte character.
+    return password.encode("utf-8")[:72].decode("utf-8", errors="ignore")
+
+
+# PUBLIC_INTERFACE
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    """Hash a password using bcrypt with an explicit 72-byte truncation for safety."""
+    safe = _bcrypt_truncate(password)
+    return pwd_context.hash(safe)
 
 
+# PUBLIC_INTERFACE
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+    """Verify a password against a bcrypt hash with explicit 72-byte truncation."""
+    safe = _bcrypt_truncate(plain_password)
+    return pwd_context.verify(safe, hashed_password)
 
 
 def create_access_token(user: User) -> str:
