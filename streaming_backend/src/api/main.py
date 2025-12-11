@@ -13,7 +13,13 @@ openapi_tags = [
 
 
 def create_app() -> FastAPI:
-    """Create and configure the FastAPI application."""
+    """Create and configure the FastAPI application.
+
+    Configures:
+    - Database and auto-creates tables
+    - CORS (allow_credentials=True, default origins localhost:3000/5173)
+    - Routers for authentication and videos
+    """
     settings = get_settings()
     app = FastAPI(
         title="StreamView Backend",
