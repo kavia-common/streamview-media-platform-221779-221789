@@ -29,6 +29,12 @@ class UserCreate(BaseModel):
     )
 
 
+class LoginRequest(BaseModel):
+    """Login request schema with email and password (no min length)."""
+    email: EmailStr = Field(..., description="User email address.")
+    password: str = Field(..., description="User password (no minimum length constraint).")
+
+
 class UserOut(BaseModel):
     id: int
     email: EmailStr

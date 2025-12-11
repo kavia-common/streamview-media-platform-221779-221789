@@ -9,8 +9,17 @@ from src.api.models.models import Category, User, Video
 from src.api.services.auth import hash_password
 
 
+def _is_test_env() -> bool:
+    """Detect test execution to avoid seeding during tests."""
+    return os.getenv("APP_ENV") == "test" or os.getenv("PYTEST_CURRENT_TEST") is not None
+
+
 def ensure_seed() -> None:
+    """Create tables and seed demo data unless running in test environment."""
     Base.metadata.create_all(bind=engine)
+    if _is_test_env():
+        # Skip seeding in tests so test fixtures remain authoritative.
+        return
     with session_scope() as db:
         _seed(db)
 

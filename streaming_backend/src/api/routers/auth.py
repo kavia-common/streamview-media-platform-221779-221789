@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from src.api.core.db import get_db
 from src.api.models.models import User
-from src.api.schemas.schemas import Message, UserCreate, UserOut
+from src.api.schemas.schemas import Message, UserCreate, UserOut, LoginRequest
 from src.api.services.auth import clear_auth_cookie, create_access_token, get_current_user, hash_password, verify_password
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -22,10 +22,16 @@ def register(data: UserCreate, db: Session = Depends(get_db)):
     return user
 
 
-@router.post("/login", response_model=UserOut, summary="Login", description="Login and set JWT in HttpOnly cookie.")
-def login(data: UserCreate, response: Response, db: Session = Depends(get_db)):
+@router.post(
+    "/login",
+    response_model=UserOut,
+    summary="Login",
+    description="Login and set JWT in HttpOnly cookie.",
+)
+def login(data: LoginRequest, response: Response, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == data.email).first()
     if not user or not verify_password(data.password, user.password_hash):
+        # Intentionally use 400 for invalid credentials for consistency with tests
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid credentials")
 
     token = create_access_token(user)

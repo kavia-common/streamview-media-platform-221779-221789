@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -10,6 +11,12 @@ openapi_tags = [
     {"name": "Authentication", "description": "User authentication and identity."},
     {"name": "Videos", "description": "Video listing, categories, streaming and history."},
 ]
+
+
+def _is_test_env() -> bool:
+    """Detect if running under tests to avoid demo seeding and other side effects."""
+    # Prefer explicit APP_ENV=test or pytest's injected env var
+    return os.getenv("APP_ENV") == "test" or os.getenv("PYTEST_CURRENT_TEST") is not None
 
 
 def create_app() -> FastAPI:
@@ -30,6 +37,14 @@ def create_app() -> FastAPI:
 
     # Database: create tables if not present
     Base.metadata.create_all(bind=engine)
+
+    # IMPORTANT: Do not auto-seed during tests.
+    # If any bootstrap/seed logic is introduced elsewhere, ensure it checks _is_test_env()
+    # so that tests control their own fixtures (/videos and /categories reflect only test seeds).
+    if not _is_test_env():
+        # No implicit seeding here; left intentionally blank to avoid altering DB state unexpectedly.
+        # Seeding is available via manual script: python -m src.api.scripts.bootstrap_db
+        pass
 
     # CORS
     app.add_middleware(
